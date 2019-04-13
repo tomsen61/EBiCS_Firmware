@@ -240,7 +240,7 @@ int main(void)
 //PWM Mode 1: Interrupt at counting down.
 
     //TIM1->BDTR |= 1L<<15;
-    TIM1->BDTR &= ~(1L<<15); //reset MOE (Main Output Enable) bit to disable PWM output
+   // TIM1->BDTR &= ~(1L<<15); //reset MOE (Main Output Enable) bit to disable PWM output
     // Start Timer 2
        if(HAL_TIM_Base_Start_IT(&htim2) != HAL_OK)
          {
@@ -362,7 +362,7 @@ int main(void)
 	  	  if(ui32_tim1_counter>800){
 
 
-	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d, %d\r\n", q31_i_q_fil>>3, q31_u_abs , uint16_current_target, TIM1->CCR4, i16_ph2_current, temp4, temp5, char_dyn_adc_state);
+	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d, %d\r\n", q31_i_q_fil>>3, q31_u_abs , uint16_current_target, TIM1->CCR4, uint32_torque_cumulated>>5, ui16_timertics, uint32_PAS, char_dyn_adc_state);
 	 	 // temp1: iq, temp3: dutycycle, temp6: timer1 value at start injec. callback, temp5: timer 1 value after angle interpolation, temp4: timer1 value after debug-angle, temp2: debug-angle in degree
 	  	 i=0;
 		  while (buffer[i] != '\0')
@@ -825,9 +825,8 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 	//for oszi-check of used time in FOC procedere
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
 	//read in phase currents
-	//i16_ph1_current = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
-	//i16_ph2_current = HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
 
+	if(q31_u_abs>1700){
 
 	switch (char_dyn_adc_state) //read in according to state
 		{
@@ -859,7 +858,12 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 
 		} // end case
+	}
 
+	else{
+		i16_ph1_current = HAL_ADCEx_InjectedGetValue(&hadc1, ADC_INJECTED_RANK_1);
+		i16_ph2_current = HAL_ADCEx_InjectedGetValue(&hadc2, ADC_INJECTED_RANK_1);
+	}
 
 
 
@@ -1084,6 +1088,8 @@ int32_t map (int32_t x, int32_t in_min, int32_t in_max, int32_t out_min, int32_t
 
 //assuming, a proper AD conversion takes 350 timer tics, to be confirmed. DT+TR+TS deadtime + noise subsiding + sample time
 void dyn_adc_state(q31_t angle){
+	if(q31_u_abs>1700){
+
 	if (switchtime[2]>switchtime[0] && switchtime[2]>switchtime[1]){
 		char_dyn_adc_state = 1; // -90° .. +30°: Phase C at high dutycycles
 		if(q31_u_abs>1700){
@@ -1114,6 +1120,11 @@ void dyn_adc_state(q31_t angle){
 		}
 		else TIM1->CCR4 =_T-1; //set startpoint of ADC to timer overflow
 	}
+		}
+	else{
+		TIM1->CCR4 =_T-1;
+		char_dyn_adc_state = 1;
+		}
 }
 
 static void set_inj_channel(char state){
