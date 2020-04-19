@@ -37,20 +37,20 @@
 #define TS_COEF 30000
 #define PAS_TIMEOUT 8000
 #define RAMP_END 1600
-#define THROTTLE_OFFSET 100
+#define THROTTLE_OFFSET 0
 #define THROTTLE_MAX 4000
 #define WHEEL_CIRCUMFERENCE 2200
 #define GEAR_RATIO 60
 #define SPEEDLIMIT 255
 #define PULSES_PER_REVOLUTION 1
 #define PH_CURRENT_MAX 100
-#define SPEC_ANGLE 1908874354 //160°
+#define SPEC_ANGLE -178956871 //BionX im Prüfstand
 //#define DIRDET
 #define FRAC_HIGH 30
 #define FRAC_LOW 15
 //#define TS_MODE
 #define DISPLAY_TYPE DISPLAY_TYPE_DEBUG //ASCII Printout for debugging
 #define REVERSE 1
-//#define FAST_LOOP_LOG
+#define FAST_LOOP_LOG
 //#define DISABLE_DYNAMIC_ADC
 #endif /* CONFIG_H_ */
