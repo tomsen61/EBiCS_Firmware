@@ -633,7 +633,7 @@ int main(void)
 
 
 	 int16_current_target=map(q31_tics_filtered>>3,tics_higher_limit,tics_lower_limit,0,int16_current_target); //ramp down current at speed limit
-
+	 if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin))int16_current_target=0; //set current to zero, when break is active
 	 if (int16_current_target>0&&!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE)) SET_BIT(TIM1->BDTR, TIM_BDTR_MOE); //enable PWM if power is wanted
 	 //slow loop procedere
 	  if(ui32_tim3_counter>800){
@@ -1111,6 +1111,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(LIGHT_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : Brake_Pin */
+  GPIO_InitStruct.Pin = Brake_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(Brake_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : Speed_EXTI5_Pin PAS_EXTI8_Pin */
   GPIO_InitStruct.Pin = Speed_EXTI5_Pin|PAS_EXTI8_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
@@ -1357,22 +1363,22 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 	//6 cases for reverse direction
 	case 54:
-		q31_rotorposition_hall_PLL = DEG_minus30 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		q31_rotorposition_hall_PLL = DEG_plus30 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
 		break;
 	case 46:
-		q31_rotorposition_hall_PLL = DEG_minus90 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		q31_rotorposition_hall_PLL = DEG_minus30 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
 		break;
 	case 62:
-		q31_rotorposition_hall_PLL = DEG_minus150 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		q31_rotorposition_hall_PLL = DEG_minus90 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
 		break;
 	case 23:
-		q31_rotorposition_hall_PLL = DEG_plus150 + q31_rotorposition_motor_specific;//SPEC_ANGLE; 	//overflow doesn't matter?!
+		q31_rotorposition_hall_PLL = DEG_minus150 + q31_rotorposition_motor_specific;//SPEC_ANGLE; 	//overflow doesn't matter?!
 		break;
 	case 31:
-		q31_rotorposition_hall_PLL = DEG_plus90 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		q31_rotorposition_hall_PLL = DEG_plus150 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
 		break;
 	case 15:
-		q31_rotorposition_hall_PLL = DEG_plus30 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		q31_rotorposition_hall_PLL = DEG_plus90 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
 		break;
 
 	} // end case

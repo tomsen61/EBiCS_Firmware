@@ -68,6 +68,8 @@
 #define Phase_Current_2_GPIO_Port GPIOA
 #define Phase_Current_3_Pin GPIO_PIN_6
 #define Phase_Current_3_GPIO_Port GPIOA
+#define Brake_Pin GPIO_PIN_11
+#define Brake_GPIO_Port GPIOA
 #define LED_Pin GPIO_PIN_2
 #define LED_GPIO_Port GPIOB
 #define LIGHT_Pin GPIO_PIN_9
