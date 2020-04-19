@@ -578,6 +578,11 @@ int main(void)
 #endif
 
 	  //throttle and PAS current target setting
+	if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin)){
+			int16_current_target=0; //set current to zero, when break is active
+		}
+	else {
+
 
 #if (DISPLAY_TYPE == DISPLAY_TYPE_BAFANG)
 	  uint16_mapped_PAS = map(uint32_PAS, RAMP_END, PAS_TIMEOUT, (PH_CURRENT_MAX*(int32_t)(ui8_AssistLevel))/5, 0); // level in range 0...5
@@ -633,8 +638,11 @@ int main(void)
 
 
 	 int16_current_target=map(q31_tics_filtered>>3,tics_higher_limit,tics_lower_limit,0,int16_current_target); //ramp down current at speed limit
-	 if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin))int16_current_target=0; //set current to zero, when break is active
+
 	 if (int16_current_target>0&&!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE)) SET_BIT(TIM1->BDTR, TIM_BDTR_MOE); //enable PWM if power is wanted
+
+	}//end of else for current target calculation
+
 	 //slow loop procedere
 	  if(ui32_tim3_counter>800){
 
@@ -649,7 +657,7 @@ int main(void)
 		  //print values for debugging
 
 
-	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n", MS.i_q,int16_current_target, MS.Battery_Current,(uint16_t) q31_tics_filtered, (uint16_t)uint32_PAS, MS.u_abs, (uint16_t) (ui16_reg_adc_value-THROTTLE_OFFSET));//((q31_i_q_fil*q31_u_abs)>>14)*
+	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n", MS.i_q,int16_current_target, MS.Battery_Current,(uint16_t) q31_tics_filtered, ui8_hall_state, MS.u_abs, (uint16_t) (ui16_reg_adc_value-THROTTLE_OFFSET));//((q31_i_q_fil*q31_u_abs)>>14)*
 	  	//	sprintf_(buffer, "%d, %d, %d, %d, %d, %d\r\n",(uint16_t)adcData[0],(uint16_t)adcData[1],(uint16_t)adcData[2],(uint16_t)adcData[3],(uint16_t)(adcData[4]),(uint16_t)(adcData[5])) ;
 
 	  	  i=0;
@@ -1301,8 +1309,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	if(GPIO_Pin == GPIO_PIN_0||GPIO_Pin == GPIO_PIN_1||GPIO_Pin == GPIO_PIN_2) //check for right interrupt source
 	{
 	ui8_hall_state = GPIOA->IDR & 0b111; //Mask input register with Hall 1 - 3 bits
+	if(MS.hall_angle_detect_flag){ //only process, if autodetect procedere is fininshed
 	ui8_hall_case=ui8_hall_state_old*10+ui8_hall_state;
 	ui8_hall_state_old=ui8_hall_state;
+	}
 	ui16_tim2_recent = __HAL_TIM_GET_COUNTER(&htim2); // read in timertics since last hall event
 
 
