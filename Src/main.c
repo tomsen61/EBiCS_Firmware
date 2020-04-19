@@ -641,7 +641,11 @@ int main(void)
 
 	 int16_current_target=map(q31_tics_filtered>>3,tics_higher_limit,tics_lower_limit,0,int16_current_target); //ramp down current at speed limit
 
-	 if (int16_current_target>0&&!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE)) SET_BIT(TIM1->BDTR, TIM_BDTR_MOE); //enable PWM if power is wanted
+	 if (int16_current_target>0&&!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE)){
+		 SET_BIT(TIM1->BDTR, TIM_BDTR_MOE); //enable PWM if power is wanted
+		 q31_rotorposition_PLL=q31_rotorposition_hall_PLL;
+
+	 }
 
 	}//end of else for current target calculation
 
@@ -1258,6 +1262,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 	//extrapolate recent rotor position
 	ui16_tim2_recent = __HAL_TIM_GET_COUNTER(&htim2); // read in timertics since last event
     if(MS.hall_angle_detect_flag){
+
 	   if (ui16_tim2_recent < ui16_timertics && !ui8_overflow_flag){ //prevent angle running away at standstill
 		// float with division necessary!
 
@@ -1674,15 +1679,18 @@ q31_t speed_PLL (q31_t ist, q31_t soll)
 
     q31_p=((soll - ist)*P_FACTOR_SPEED)>>10;
     q31_d_i+=((soll - ist)*I_FACTOR_SPEED)>>10;
+
+    if (!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE))q31_d_i=0;
 /*
-    if (q31_d_i<-1800)q31_d_i=-1800;
-    if (q31_d_i>1800)q31_d_i=1800;
+    if (q31_d_i<-(1<<23))q31_d_i=-(1<<23);
+    if (q31_d_i>(1<<23))q31_d_i=(1<<23);
+
 */
-
     q31_d_dc=q31_p+q31_d_i;
-
-
-
+/*
+    if (q31_d_dc<-(1<<23))q31_d_dc=-(1<<23);
+    if (q31_d_dc>(1<<23))q31_d_dc=(1<<23);
+*/
     return (q31_d_dc);
   }
 
