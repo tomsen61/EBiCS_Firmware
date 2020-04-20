@@ -425,7 +425,7 @@ int main(void)
 #if (DISPLAY_TYPE == DISPLAY_TYPE_DEBUG)
 
    	MS.hall_angle_detect_flag=0; //set uq to contstant value in FOC.c for open loop control
-   	q31_rotorposition_absolute=1<<31;
+   	q31_rotorposition_absolute=1<<16;
    	HAL_Delay(5);
    	for(i=0;i<360;i++){
    		q31_rotorposition_absolute+=11930465; //drive motor in open loop with steps of 1°
@@ -441,7 +441,7 @@ int main(void)
    		else{
    	   		if(ui8_hall_state_old==4&&ui8_hall_state==5)//switch from 4 to 5 is associated with 0°
    	   		{
-   	   		//q31_rotorposition_motor_specific=q31_rotorposition_absolute+(1<<31);//+357913941;//298261617LL; //offset empiric
+   	   		q31_rotorposition_motor_specific=q31_rotorposition_absolute+(1<<31);//+357913941;//298261617LL; //offset empiric
    	   		}}
 
    		ui8_hall_state_old=ui8_hall_state;
@@ -643,9 +643,7 @@ int main(void)
 
 	 if (int16_current_target>0&&!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE)){
 		 SET_BIT(TIM1->BDTR, TIM_BDTR_MOE); //enable PWM if power is wanted
-		 q31_rotorposition_PLL=q31_rotorposition_hall_PLL;
-
-	 }
+		 }
 
 	}//end of else for current target calculation
 
@@ -1263,7 +1261,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 	ui16_tim2_recent = __HAL_TIM_GET_COUNTER(&htim2); // read in timertics since last event
     if(MS.hall_angle_detect_flag){
 
-	   if (ui16_tim2_recent < ui16_timertics && !ui8_overflow_flag){ //prevent angle running away at standstill
+	   if (ui16_tim2_recent < ui16_timertics+(ui16_timertics>>2) && !ui8_overflow_flag){ //prevent angle running away at standstill
 		// float with division necessary!
 
 		//q31_rotorposition_absolute = q31_rotorposition_hall + (q31_t)(i8_direction * (715827883.0*((float)ui16_tim2_recent/(float)ui16_timertics))); //interpolate angle between two hallevents by scaling timer2 tics
@@ -1274,7 +1272,7 @@ void HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef* hadc)
 	   }
 	   else
 	   {ui8_overflow_flag=1;
-
+	  	q31_rotorposition_absolute=q31_rotorposition_hall_PLL;
 	   }
     }//end if hall angle detect
 
