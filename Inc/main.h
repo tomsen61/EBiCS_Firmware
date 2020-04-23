@@ -83,8 +83,8 @@
 #define PAS_EXTI8_GPIO_Port GPIOB
 #define PAS_EXTI8_EXTI_IRQn EXTI9_5_IRQn
 
-#define P_FACTOR_SPEED 1
-#define I_FACTOR_SPEED 1
+#define P_FACTOR_SPEED 7 //7 for Shengyi middrive, 10 for BionX IGH3
+#define I_FACTOR_SPEED 11 //11 for Shengyi middrive, 10 for BionX IGH3
 
 
 

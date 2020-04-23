@@ -1401,7 +1401,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 	q31_angle_per_tic = speed_PLL(q31_rotorposition_PLL,q31_rotorposition_hall_PLL);
 	temp3=q31_rotorposition_hall_PLL>>23;
-	temp4=q31_angle_per_tic;
+	temp4=q31_angle_per_tic>>5;
 
 	} //end if
 
@@ -1675,15 +1675,15 @@ q31_t speed_PLL (q31_t ist, q31_t soll)
     static q31_t q31_d_i = 0;
     static q31_t q31_d_dc = 0;
 
-    q31_p=((soll - ist)*P_FACTOR_SPEED)>>10;
-    q31_d_i+=((soll - ist)*I_FACTOR_SPEED)>>10;
-
+    q31_p=(soll - ist)>>P_FACTOR_SPEED;   				//7 for Shengyi middrive, 10 for BionX IGH3
+    q31_d_i+=(soll - ist)>>I_FACTOR_SPEED;				//11 for Shengyi middrive, 10 for BionX IGH3
+    temp5=q31_d_i>>5;
     if (!READ_BIT(TIM1->BDTR, TIM_BDTR_MOE))q31_d_i=0;
 /*
-    if (q31_d_i<-(1<<23))q31_d_i=-(1<<23);
-    if (q31_d_i>(1<<23))q31_d_i=(1<<23);
-
+    if (q31_d_i<-(1<<23))q31_d_i=-(1<<26);
+    if (q31_d_i>(1<<23))q31_d_i=(1<<26);
 */
+
     q31_d_dc=q31_p+q31_d_i;
 /*
     if (q31_d_dc<-(1<<23))q31_d_dc=-(1<<23);
