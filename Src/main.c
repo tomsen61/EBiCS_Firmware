@@ -667,7 +667,7 @@ int main(void)
 		  //print values for debugging
 
 
-	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n", MS.i_q,int16_current_target, (uint16_t) temp1,(uint16_t) temp2, (uint16_t) temp3, (uint16_t)uint32_PAS, (uint16_t) (ui16_reg_adc_value-THROTTLE_OFFSET));//((q31_i_q_fil*q31_u_abs)>>14)*
+	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n", MS.i_q,int16_current_target, ui16_ph1_offset,ui16_ph2_offset, ui16_ph3_offset, ui8_hall_state, (uint16_t) (ui16_reg_adc_value-THROTTLE_OFFSET));//((q31_i_q_fil*q31_u_abs)>>14)*
 	  	//	sprintf_(buffer, "%d, %d, %d, %d, %d, %d\r\n",(uint16_t)adcData[0],(uint16_t)adcData[1],(uint16_t)adcData[2],(uint16_t)adcData[3],(uint16_t)(adcData[4]),(uint16_t)(adcData[5])) ;
 
 	  	  i=0;
