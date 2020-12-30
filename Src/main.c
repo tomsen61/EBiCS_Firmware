@@ -115,6 +115,7 @@ uint16_t k=0;
 uint8_t ui8_overflow_flag=0;
 uint8_t ui8_slowloop_counter=0;
 uint8_t ui8_adc_inj_flag=0;
+uint8_t ui8_adc_regular_flag=0;
 int8_t i8_direction= REVERSE;
 
 uint8_t ui8_adc_offset_done_flag=0;
@@ -138,6 +139,9 @@ uint32_t uint32_PAS_cumulated=32000;
 uint16_t uint16_mapped_throttle=0;
 uint16_t uint16_mapped_PAS=0;
 int16_t int16_current_target=0;
+
+uint16_t uint16_half_rotation_counter=0;
+uint16_t uint16_full_rotation_counter=0;
 
 q31_t q31_t_Battery_Current_accumulated=0;
 
@@ -347,20 +351,7 @@ int main(void)
             }
 
 
-/*
-      // HAL_TIM_GenerateEvent(&htim1, TIM_EVENTSOURCE_CC4);
-       __HAL_LOCK(&htim1);
-       SET_BIT(TIM1->EGR, TIM_EGR_CC4G);//capture compare ch 4 event
-       SET_BIT(TIM1->EGR, TIM_EGR_TG);//Trigger generation
-       SET_BIT(TIM1->BDTR, TIM_AUTOMATICOUTPUT_ENABLE);//Trigger generation
 
-       __HAL_UNLOCK(&htim1);
-       SET_BIT(ADC1->CR2, ADC_CR2_JEXTTRIG);//external trigger enable
-
-*/
-
-       //Init KingMeter Display
-       //Init KingMeter Display
 #if (DISPLAY_TYPE & DISPLAY_TYPE_KINGMETER)
        KingMeter_Init (&KM);
 #endif
@@ -382,51 +373,32 @@ int main(void)
     TIM1->CCR2 = 1023;
     TIM1->CCR3 = 1023;
 
+    CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE);//Disable PWM
 
-
-// get offset values for adc phase currents
-// first phase A+B
-    i=0;
+    HAL_Delay(200); //wait for stable conditions
+// get phase current offset values
     for(i=0;i<32;i++){
-    	while(!ui8_adc_inj_flag){}
-    	ui16_ph1_offset+=i16_ph1_current;
-    	ui16_ph2_offset+=i16_ph2_current;
-    	ADC1->JOFR1 = ui16_ph1_offset;
-        ADC2->JOFR1 = ui16_ph2_offset;
-     	ui8_adc_inj_flag=0;
-    }
-
-//switch to phase C
-    ADC1->JSQR=0b00110000000000000000; //ADC1 injected reads phase C, JSQ4 = 0b00110, decimal 6
-    ADC1->JOFR1 = ui16_ph3_offset;
-
-    //wait for stable reading on phase 3
-
-    for(i=0;i<8;i++){
-    	while(!ui8_adc_inj_flag){}
-    	ui8_adc_inj_flag=0;
-    }
-
-    i=0;
-    for(i=0;i<32;i++){
-    	while(!ui8_adc_inj_flag){}
-    	ui16_ph3_offset+=i16_ph1_current;
-    	ADC1->JOFR1 = ui16_ph3_offset;
-    	ui8_adc_inj_flag=0;
+    	while(!ui8_adc_regular_flag){}
+    	ui16_ph1_offset+=adcData[2];
+    	ui16_ph2_offset+=adcData[3];
+    	ui16_ph3_offset+=adcData[4];
+    	ui8_adc_regular_flag=0;
 
     }
-
-    ADC1->JSQR=0b00100000000000000000; //ADC1 injected reads phase A JL = 0b00, JSQ4 = 0b00100 (decimal 4 = channel 4)
-   	ADC1->JOFR1 = ui16_ph1_offset;
+    ui16_ph1_offset=ui16_ph1_offset>>5;
+    ui16_ph2_offset=ui16_ph2_offset>>5;
+    ui16_ph3_offset=ui16_ph3_offset>>5;
 
    	ui8_adc_offset_done_flag=1;
 
 #if (DISPLAY_TYPE == DISPLAY_TYPE_DEBUG)
+   	SET_BIT(TIM1->BDTR, TIM_BDTR_MOE);
+   	printf_("phase current offsets:  %d, %d, %d \n ", ui16_ph1_offset, ui16_ph2_offset, ui16_ph3_offset);
 
    	MS.hall_angle_detect_flag=0; //set uq to contstant value in FOC.c for open loop control
    	q31_rotorposition_absolute=1<<31;
    	HAL_Delay(5);
-   	for(i=0;i<360;i++){
+   	for(i=0;i<720;i++){
    		q31_rotorposition_absolute+=11930465; //drive motor in open loop with steps of 1°
    		HAL_Delay(5);
    		if(ui8_hall_state_old!=ui8_hall_state)printf_("hallstate:  %d, \n", ui8_hall_state);
@@ -448,9 +420,10 @@ int main(void)
 
 
    	MS.hall_angle_detect_flag=1;
-
-    printf_("Motor specific angle:  %d, \n ", q31_rotorposition_motor_specific);
     HAL_Delay(5);
+    printf_("Motor specific angle:  %d, \n ", q31_rotorposition_motor_specific);
+
+
 
 #else
    	q31_rotorposition_motor_specific = SPEC_ANGLE;
@@ -486,7 +459,7 @@ int main(void)
 		  q31_t_Battery_Current_accumulated -= q31_t_Battery_Current_accumulated>>8;
 		  q31_t_Battery_Current_accumulated += ((MS.i_q*MS.u_abs)>>11)*(uint16_t)(CAL_I>>8);
 
-		  MS.Battery_Current = abs(q31_t_Battery_Current_accumulated>>8); //Battery current in mA
+		  MS.Battery_Current = REVERSE*(q31_t_Battery_Current_accumulated>>8); //Battery current in mA
 
 		  	//Control id
 		  q31_u_d_temp = -PI_control_i_d(MS.i_d, 0); //control direct current to zero
@@ -661,7 +634,7 @@ int main(void)
 		  MS.Voltage=adcData[0];
 		  if(uint32_SPEED_counter>127999)MS.Speed =128000;
 
-		  if(__HAL_TIM_GET_COUNTER(&htim2)>60000&&READ_BIT(TIM1->BDTR, TIM_BDTR_MOE))CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE); //Disable PWM if motor is not turning
+		  if((uint16_full_rotation_counter>7999||uint16_half_rotation_counter>7999)&&READ_BIT(TIM1->BDTR, TIM_BDTR_MOE))CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE); //Disable PWM if motor is not turning
 
 #if (DISPLAY_TYPE == DISPLAY_TYPE_DEBUG && !defined(FAST_LOOP_LOG))
 		  //print values for debugging
@@ -852,7 +825,7 @@ _Error_Handler(__FILE__, __LINE__);
 }
 /**Configure Regular Channel
 */
-sConfig.Channel = ADC_CHANNEL_9;
+sConfig.Channel = ADC_CHANNEL_4;
 sConfig.Rank = ADC_REGULAR_RANK_3;
 sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;//ADC_SAMPLETIME_239CYCLES_5;
 if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
@@ -1194,9 +1167,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			  uint32_PAS_counter++;
 			  if(HAL_GPIO_ReadPin(PAS_GPIO_Port, PAS_Pin))uint32_PAS_HIGH_counter++;
 		}
-		if (uint32_SPEED_counter<128000){
-			  uint32_SPEED_counter++;
-		}
+		if (uint32_SPEED_counter<128000) uint32_SPEED_counter++;
+		if(uint16_full_rotation_counter<8000)uint16_full_rotation_counter++;	//full rotation counter for motor standstill detection
+		if(uint16_half_rotation_counter<8000)uint16_half_rotation_counter++;	//half rotation counter for motor standstill detection
 
 	}
 }
@@ -1209,6 +1182,8 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	ui32_reg_adc_value_filter -= ui32_reg_adc_value_filter>>4;
 	ui32_reg_adc_value_filter += adcData[1]; //HAL_ADC_GetValue(hadc);
 	ui16_reg_adc_value = ui32_reg_adc_value_filter>>4;
+
+	ui8_adc_regular_flag=1;
 
 
 
@@ -1362,6 +1337,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 	{
 	case 5: //0°
 		q31_rotorposition_hall = DEG_0 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
+		uint16_full_rotation_counter=0;
 		break;
 	case 1: //60°
 		q31_rotorposition_hall = DEG_plus60 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
@@ -1371,6 +1347,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		break;
 	case 2: //180°
 		q31_rotorposition_hall = DEG_plus180 + q31_rotorposition_motor_specific;//SPEC_ANGLE; 	//overflow doesn't matter?!
+		uint16_half_rotation_counter=0;
 		break;
 	case 6: //240°-->-120°
 		q31_rotorposition_hall = DEG_minus120 + q31_rotorposition_motor_specific;//SPEC_ANGLE;
