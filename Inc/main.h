@@ -68,6 +68,8 @@
 #define Phase_Current_2_GPIO_Port GPIOA
 #define Phase_Current_3_Pin GPIO_PIN_6
 #define Phase_Current_3_GPIO_Port GPIOA
+#define Brake_Pin GPIO_PIN_11
+#define Brake_GPIO_Port GPIOA
 #define Temperature_Pin GPIO_PIN_1
 #define Temperature_GPIO_Port GPIOB
 #define LED_Pin GPIO_PIN_2
@@ -84,6 +86,7 @@
 #define PAS_EXTI8_EXTI_IRQn EXTI9_5_IRQn
 
 #define PUSHASSIST_CURRENT 30
+#define VOLTAGE_MIN 300
 
 
 
