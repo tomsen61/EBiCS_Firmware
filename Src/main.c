@@ -566,7 +566,10 @@ int main(void)
 
 	  //current target calculation
 		//highest priority: regen by brake lever
-		if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin))int16_current_target=-50;
+		if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin)){
+			if(q31_tics_filtered>>3<15000)int16_current_target=-50; //only apply regen, if motor is turning fast enough
+			else int16_current_target=0;
+		}
 		//next priority: undervoltage protection
 		else if(MS.Voltage<VOLTAGE_MIN)int16_current_target=0;
 		//next priority: push assist
@@ -663,7 +666,7 @@ int main(void)
 #if (DISPLAY_TYPE == DISPLAY_TYPE_DEBUG && !defined(FAST_LOOP_LOG))
 		  //print values for debugging
 
-	  		sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n", MS.i_q,int16_current_target, MS.Voltage,(uint16_t)adcData[5],(uint16_t)adcData[6], ui8_hall_state, (uint16_t) (ui16_reg_adc_value));
+	  		sprintf_(buffer, "%lu, %d, %d, %d, %d, %d, %d, %d\r\n", q31_tics_filtered>>3, MS.i_q,int16_current_target, MS.Voltage,(uint16_t)adcData[5],(uint16_t)adcData[6], ui8_hall_state, (uint16_t) (ui16_reg_adc_value));
 	  	//	sprintf_(buffer, "%d, %d, %d, %d, %d, %d, %d\r\n",(uint16_t)adcData[0],(uint16_t)adcData[1],(uint16_t)adcData[2],(uint16_t)adcData[3],(uint16_t)adcData[4],(uint16_t)adcData[5],(uint16_t)adcData[6]) ;
 
 
