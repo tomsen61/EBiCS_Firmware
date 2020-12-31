@@ -204,7 +204,7 @@ void KingMeter_Init (KINGMETER_t* KM_ctx)
 
 #if (DISPLAY_TYPE == DISPLAY_TYPE_KINGMETER_901U)
     //Start UART with DMA
-    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, 15) != HAL_OK)
+    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, 19) != HAL_OK)
      {
  	   Error_Handler();
      }
@@ -355,13 +355,19 @@ static void KM_618U_Service(KINGMETER_t* KM_ctx)
 static void KM_901U_Service(KINGMETER_t* KM_ctx)
 {
     uint8_t  i;
-    static uint8_t  j=0;
+    static uint8_t  j; //position of start byte 0x3A
+    static uint8_t  k; //position of CR 0x0D
+    static uint8_t  l; //position of LF 0x0A
     static uint8_t  first_run_flag=0;
 
     uint16_t CheckSum;
     static  uint8_t  TxBuff[KM_MAX_TXBUFF];
     uint8_t  TxCnt;
     static uint8_t  handshake_position;
+    static uint8_t  Rx_message_length;
+
+
+
 
     i=KM_ctx->RxBuff[2];
 
@@ -369,6 +375,33 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 	{
 
 	case 0:
+
+	    for(i=0; i<19; i++)
+	                {
+
+	                    if(KM_ctx->RxBuff[i]==0x3A)j=i;
+	                    if(KM_ctx->RxBuff[i]==0x0D)k=i;
+	                    if(KM_ctx->RxBuff[i]==0x0A)l=i;
+	                }
+	    if (j<k && l==k+1){
+	    	Rx_message_length=l-j+1;
+		    HAL_UART_DMAStop(&huart1);
+
+		    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, Rx_message_length) != HAL_OK)
+		     {
+		 	   Error_Handler();
+		     }
+		    if(Rx_message_length==10&&KM_ctx->RxBuff[j+2]==0x52)first_run_flag=3;
+		    else first_run_flag=1;
+
+	    }
+
+
+
+
+
+		break;
+	case 1:
 		handshake_position=KM_ctx->RxBuff[9];
 		//TxBuff[0]=KM_ctx->RxBuff[9];
 		//TxBuff[1]=KM_901U_HANDSHAKE[handshake_position];
@@ -383,19 +416,12 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 		//FD FB FD FD 00
 	    HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&TxBuff, 5);
 	    HAL_Delay(5);
-	    first_run_flag=1;
-
-	    HAL_UART_DMAStop(&huart1);
-
-	    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, 9) != HAL_OK)
-	     {
-	 	   Error_Handler();
-	     }
+	    first_run_flag=2;
 
 		break;
 
-	case 1:
-		// Prepare Tx message with handshake code
+	case 2:
+		// Prepare Tx message with handshake code 3A 1A 53 05 00 00 0D 89 00 08 01 0D 0A
 		    TxBuff[0] = 0X3A;                                       // StartCode
 		    TxBuff[1] = 0x1A;                                       // SrcAdd:  Controller
 		    TxBuff[2] = 0x53;                                      	// CmdCode
@@ -427,17 +453,20 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 		   // HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&KM_ctx->RxBuff, 10);
 
 		    HAL_Delay(25);
-		    first_run_flag=2;
+		    first_run_flag=3;
 
 		    HAL_UART_DMAStop(&huart1);
 
-		    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, 15) != HAL_OK)
+		    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, Rx_message_length) != HAL_OK)
 		     {
 		 	   Error_Handler();
 		     }
 		    break;
 
-	case 2:
+	case 3:
+
+		//if(KM_ctx->RxBuff[0]!=0x3A)first_run_flag=0;
+
        switch(KM_ctx->RxBuff[2])
             {
                 case 0x52:      // Operation mode
@@ -473,8 +502,8 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
                     }
                     else
                     {
-                    	KM_ctx->RxState = RXSTATE_DONE;
-                    	//KM_ctx->RxState = RXSTATE_STARTCODE;                // Invalid CheckSum, ignore message
+                    	//KM_ctx->RxState = RXSTATE_DONE;
+                    	KM_ctx->RxState = RXSTATE_STARTCODE;                // Invalid CheckSum, ignore message
                     }
                break;
             }
@@ -515,14 +544,14 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
                     TxBuff[4]  = 0x40;                                  // State data (only UnderVoltage bit has influence on display)
                 }
                 else
-                {
-                    TxBuff[4]  = 0x00;                                  // State data (only UnderVoltage bit has influence on display)
+                {														//Byte7 ist autocruise Symbol, Byte6 ist Battery low Symbol
+                    TxBuff[4]  = 0b00000000;                                  // State data (only UnderVoltage bit has influence on display)
                 }
 
                 TxBuff[5]  = (uint8_t) ((KM_ctx->Tx.Current_x10 * 3) / 10);        			// Current low Strom in 1/3 Ampere, nur ein Byte
                 TxBuff[6]  = highByte(KM_ctx->Tx.Wheeltime_ms);         // WheelSpeed high Hinweis
                 TxBuff[7]  = lowByte (KM_ctx->Tx.Wheeltime_ms);         // WheelSpeed low
-                TxBuff[8] = KM_ctx->Tx.Error;                          // Error
+                TxBuff[8] =  KM_ctx->Tx.Error;                          // Error
 
                 TxCnt = 9;
                 break;
