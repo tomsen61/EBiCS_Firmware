@@ -133,17 +133,19 @@ typedef struct
 
 }TX_PARAM_t;
 
+#if (DISPLAY_TYPE == DISPLAY_TYPE_KINGMETER_901U)
+ #define KM_MAX_RXBUFF 20
+ #define KM5S_NM_RXBUFF 15 // KM5S RX-Buffer length for normal mode
+ #define KM_MAX_TXBUFF 13
+#endif
+
 #if (DISPLAY_TYPE == DISPLAY_TYPE_KINGMETER_618U)
  #define KM_MAX_RXBUFF 6
  #define KM_MAX_TXBUFF 8
 #endif
 
 
-#if (DISPLAY_TYPE == DISPLAY_TYPE_KINGMETER_901U)
- #define KM_MAX_RXBUFF 20
- #define KM5S_NM_RXBUFF 15 // KM5S RX-Buffer length for normal mode
- #define KM_MAX_TXBUFF 13
-#endif
+
 
 typedef struct
 {

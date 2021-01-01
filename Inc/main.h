@@ -85,8 +85,7 @@
 #define PAS_EXTI8_GPIO_Port GPIOB
 #define PAS_EXTI8_EXTI_IRQn EXTI9_5_IRQn
 
-#define PUSHASSIST_CURRENT 30
-#define VOLTAGE_MIN 300
+
 
 
 

@@ -567,7 +567,7 @@ int main(void)
 	  //current target calculation
 		//highest priority: regen by brake lever
 		if(!HAL_GPIO_ReadPin(Brake_GPIO_Port, Brake_Pin)){
-			if(q31_tics_filtered>>3<15000)int16_current_target=-50; //only apply regen, if motor is turning fast enough
+			if(q31_tics_filtered>>3<15000)int16_current_target=-REGEN_CURRENT_MAX; //only apply regen, if motor is turning fast enough
 			else int16_current_target=0;
 		}
 		//next priority: undervoltage protection
@@ -1231,7 +1231,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
 	ui32_reg_adc_value_filter -= ui32_reg_adc_value_filter>>4;
-	ui32_reg_adc_value_filter += adcData[1]; //HAL_ADC_GetValue(hadc);
+#ifdef TQONAD1
+	ui32_reg_adc_value_filter += adcData[6]; //get value from AD1
+#else
+	ui32_reg_adc_value_filter += adcData[1]; //get value from SP
+#endif
 	ui16_reg_adc_value = ui32_reg_adc_value_filter>>4;
 
 	ui8_adc_regular_flag=1;
