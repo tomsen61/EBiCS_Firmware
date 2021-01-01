@@ -354,11 +354,12 @@ static void KM_618U_Service(KINGMETER_t* KM_ctx)
  ***************************************************************************************************/
 static void KM_901U_Service(KINGMETER_t* KM_ctx)
 {
-    uint8_t  i;
-    static uint8_t  j; //position of start byte 0x3A
+    uint8_t  m;
+    static uint8_t  j=0; //position of start byte 0x3A
     static uint8_t  k; //position of CR 0x0D
     static uint8_t  l; //position of LF 0x0A
     static uint8_t  first_run_flag=0;
+    static uint8_t  n=0;
 
     uint16_t CheckSum;
     static  uint8_t  TxBuff[KM_MAX_TXBUFF];
@@ -369,23 +370,25 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 
 
 
-    i=KM_ctx->RxBuff[2];
-
 	switch (first_run_flag)
 	{
 
 	case 0:
 
-	    for(i=0; i<19; i++)
+	    for(m=0; m<19; m++)
 	                {
 
-	                    if(KM_ctx->RxBuff[i]==0x3A)j=i;
-	                    if(KM_ctx->RxBuff[i]==0x0D)k=i;
-	                    if(KM_ctx->RxBuff[i]==0x0A)l=i;
+	                    if(!j&&KM_ctx->RxBuff[m]==0x3A)j=m;
+	                    if(!k&&KM_ctx->RxBuff[m]==0x0D)k=m;
+	                    if(!l&&KM_ctx->RxBuff[m]==0x0A)l=m;
 	                }
+
+
 	    if (j<k && l==k+1){
-	    	Rx_message_length=l-j+1;
-		    HAL_UART_DMAStop(&huart1);
+	      	Rx_message_length=l-j+1;
+	      	handshake_position=KM_ctx->RxBuff[9+j];
+
+		   HAL_UART_DMAStop(&huart1);
 
 		    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, Rx_message_length) != HAL_OK)
 		     {
@@ -394,15 +397,19 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 		    if(Rx_message_length==10&&KM_ctx->RxBuff[j+2]==0x52)first_run_flag=3;
 		    else first_run_flag=1;
 
+
 	    }
 
 
-
+	    n++;
+	    j=0;
+	    k=0;
+	    l=0;
 
 
 		break;
 	case 1:
-		handshake_position=KM_ctx->RxBuff[9];
+
 		//TxBuff[0]=KM_ctx->RxBuff[9];
 		//TxBuff[1]=KM_901U_HANDSHAKE[handshake_position];
 	   // HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&TxBuff, 2);
@@ -433,10 +440,10 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 		    TxBuff[8] = 0x00;
 
 		    CheckSum = 0x0000;
-		    for(i=1; i<8; i++)
+		    for(m=1; m<8; m++)
 		                {
 
-		                    CheckSum = CheckSum + TxBuff[i];                        // Calculate CheckSum
+		                    CheckSum = CheckSum + TxBuff[m];                        // Calculate CheckSum
 		                }
 		    TxBuff[9]=lowByte(CheckSum);							// Low Byte of checksum
 		    TxBuff[10]=highByte(CheckSum);
@@ -465,19 +472,19 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 
 	case 3:
 
-		//if(KM_ctx->RxBuff[0]!=0x3A)first_run_flag=0;
+
 
        switch(KM_ctx->RxBuff[2])
             {
                 case 0x52:      // Operation mode
 
                 	CheckSum = 0x0000;
-                	for(i=1; i<(4+KM_ctx->RxBuff[3]); i++)
+                	for(m=1; m<(4+KM_ctx->RxBuff[3]); m++)
                 		{
-                		CheckSum = CheckSum + KM_ctx->RxBuff[i];            // Calculate CheckSum
+                		CheckSum = CheckSum + KM_ctx->RxBuff[m];            // Calculate CheckSum
                 		}
 
-                	if((lowByte(CheckSum)) == KM_ctx->RxBuff[i] && (highByte(CheckSum)) == KM_ctx->RxBuff[i+1]) //low-byte and high-byte
+                	if((lowByte(CheckSum)) == KM_ctx->RxBuff[m] && (highByte(CheckSum)) == KM_ctx->RxBuff[m+1]) //low-byte and high-byte
                 		{
                 		KM_ctx->RxState = RXSTATE_DONE;
                 		}
@@ -491,12 +498,12 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
                 case 0x53:      // Settings mode
 
                     CheckSum = 0x0000;
-                    for(i=1; i<(4+KM_ctx->RxBuff[3]); i++)
+                    for(m=1; m<(4+KM_ctx->RxBuff[3]); m++)
                     {
-                        CheckSum = CheckSum + KM_ctx->RxBuff[i];            // Calculate CheckSum
+                        CheckSum = CheckSum + KM_ctx->RxBuff[m];            // Calculate CheckSum
                     }
 
-                    if((lowByte(CheckSum)) == KM_ctx->RxBuff[i] && (highByte(CheckSum)) == KM_ctx->RxBuff[i+1]) //low-byte and high-byte
+                    if((lowByte(CheckSum)) == KM_ctx->RxBuff[m] && (highByte(CheckSum)) == KM_ctx->RxBuff[m+1]) //low-byte and high-byte
                     {
                         KM_ctx->RxState = RXSTATE_DONE;
                     }
@@ -608,10 +615,10 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
 
 
 
-            for(i=1; i<TxCnt; i++)
+            for(m=1; m<TxCnt; m++)
             {
 
-                CheckSum = CheckSum + TxBuff[i];                        // Calculate CheckSum
+                CheckSum = CheckSum + TxBuff[m];                        // Calculate CheckSum
             }
             TxBuff[TxCnt+0]=lowByte(CheckSum);							// Low Byte of checksum
             TxBuff[TxCnt+1]=highByte(CheckSum);								// High Byte of checksum
@@ -621,9 +628,21 @@ static void KM_901U_Service(KINGMETER_t* KM_ctx)
             HAL_UART_Transmit_DMA(&huart1, (uint8_t *)&TxBuff, TxCnt+4);
         }
     }
+	if(KM_ctx->RxBuff[0] == 0x3A && KM_ctx->RxBuff[3]+8 != Rx_message_length){
+		Rx_message_length=KM_ctx->RxBuff[3]+8;
+		HAL_Delay(25);
+	    HAL_UART_DMAStop(&huart1);
+
+		    if (HAL_UART_Receive_DMA(&huart1, (uint8_t *)KM_ctx->RxBuff, Rx_message_length) != HAL_OK)
+		     {
+		 	   Error_Handler();
+		     }
+
+	}
     break; //end of case 3, normal operation
 	}
 }
+
 #endif
 
 uint8_t lowByte(uint16_t word){
