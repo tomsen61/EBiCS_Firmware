@@ -379,17 +379,35 @@ int main(void)
 
 // get offset values for adc phase currents
 
-    for(i=0;i<32;i++){
-    	while(!ui8_adc_regular_flag){}
-    	ui16_ph1_offset+=adcData[2];
-    	ui16_ph2_offset+=adcData[3];
-    	ui16_ph3_offset+=adcData[4];
-    	ui8_adc_regular_flag=0;
 
-    }
-    ui16_ph1_offset=ui16_ph1_offset>>5;
-    ui16_ph2_offset=ui16_ph2_offset>>5;
-    ui16_ph3_offset=ui16_ph3_offset>>5;
+    // get offset values for adc phase currents
+    // first phase A+B
+        i=0;
+        for(i=0;i<32;i++){
+        	while(!ui8_adc_inj_flag){}
+        	ui16_ph1_offset+=i16_ph1_current;
+        	ui16_ph2_offset+=i16_ph2_current;
+        	ADC1->JOFR1 = ui16_ph1_offset;
+            ADC2->JOFR1 = ui16_ph2_offset;
+         	ui8_adc_inj_flag=0;
+        }
+    //switch to phase C
+        ADC1->JSQR=0b00110000000000000000; //ADC1 injected reads phase C, JSQ4 = 0b00110, decimal 6
+        ADC1->JOFR1 = ui16_ph3_offset;
+        //wait for stable reading on phase 3
+        for(i=0;i<8;i++){
+        	while(!ui8_adc_inj_flag){}
+        	ui8_adc_inj_flag=0;
+        }
+        i=0;
+        for(i=0;i<32;i++){
+        	while(!ui8_adc_inj_flag){}
+        	ui16_ph3_offset+=i16_ph1_current;
+        	ADC1->JOFR1 = ui16_ph3_offset;
+        	ui8_adc_inj_flag=0;
+        }
+        ADC1->JSQR=0b00100000000000000000; //ADC1 injected reads phase A JL = 0b00, JSQ4 = 0b00100 (decimal 4 = channel 4)
+       	ADC1->JOFR1 = ui16_ph1_offset;
 
 
    	ui8_adc_offset_done_flag=1;
