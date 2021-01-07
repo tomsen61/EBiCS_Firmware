@@ -371,7 +371,7 @@ int main(void)
     TIM1->CCR2 = 1023;
     TIM1->CCR3 = 1023;
 
-    CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE);//Disable PWM
+    //CLEAR_BIT(TIM1->BDTR, TIM_BDTR_MOE);//Disable PWM
 
     HAL_Delay(200); //wait for stable conditions
 
