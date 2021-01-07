@@ -422,7 +422,9 @@ int main(void)
    	for(i=0;i<720;i++){
    		q31_rotorposition_absolute+=11930465; //drive motor in open loop with steps of 1°
    		HAL_Delay(5);
-   		if(ui8_hall_state_old!=ui8_hall_state)printf_("hallstate:  %d, \n", ui8_hall_state);
+   		if(ui8_hall_state_old!=ui8_hall_state){
+   			printf_("angle: %d, hallstate:  %d,  \n",(int16_t)(((q31_rotorposition_absolute>>23)*180)>>8), ui8_hall_state);
+   		}
 
 
    		if(i8_direction==-1){
