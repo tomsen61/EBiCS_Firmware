@@ -32,7 +32,7 @@ jobs:
         mkdir build 
         ls ${{ github.workspace }}
     - name: arm-none-eabi-gcc
-      uses: fiam/arm-none-eabi-gcc@v1.0.2.
+      uses: fiam/arm-none-eabi-gcc@v1.0.2
       with:
         release: '9-2020-q2'
     - name: make
