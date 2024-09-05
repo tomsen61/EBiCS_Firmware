@@ -13,7 +13,7 @@ jobs:
     env:
       # ruleid: allowed-unsecure-commands
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     steps:
     - uses: actions/checkout@v4
     - name: log untrusted output
