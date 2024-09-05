@@ -36,9 +36,9 @@
 //#define INDIVIDUAL_MODES
 //#define SPEEDTHROTTLE
 #define SIXSTEPTHRESHOLD 20000
-#define SPEED_PLL 0 //1 for using PLL, 0 for angle extrapolation
+#define SPEED_PLL 1 //1 for using PLL, 0 for angle extrapolation
 #define P_FACTOR_PLL 10
-#define I_FACTOR_PLL 10
+#define I_FACTOR_PLL 7
 
 //----------------------------------------------------------------------
 //Battery bar settings for Kunteng and Bafang Display
@@ -50,25 +50,25 @@
 
 //----------------------------------------------------------------------
 //PI-control factor settings
-#define P_FACTOR_I_Q 50
-#define I_FACTOR_I_Q 2
-#define P_FACTOR_I_D 50
+#define P_FACTOR_I_Q 200
+#define I_FACTOR_I_Q 1
+#define P_FACTOR_I_D 400
 #define I_FACTOR_I_D 2
-#define P_FACTOR_SPEED 1
-#define I_FACTOR_SPEED 10
+#define P_FACTOR_SPEED 10
+#define I_FACTOR_SPEED 2
 
 //----------------------------------------------------------------------
 //PAS mode settings
 //#define DIRDET
 #define FRAC_HIGH 30
 #define FRAC_LOW 15
-#define PAS_TIMEOUT 3000
-#define RAMP_END 1200
+#define PAS_TIMEOUT 2000
+#define RAMP_END 200
 
 //---------------------------------------------------------------------
 //Throttle settings
-#define THROTTLE_OFFSET 1250   //only default value, throttle offset is set at startup automatically
-#define THROTTLE_MAX 2850
+#define THROTTLE_OFFSET 750   //only default value, throttle offset is set at startup automatically
+#define THROTTLE_MAX 3000
 #define THROTTLE_OVERRIDE
 
 //--------------------------------------------------------------------
@@ -83,11 +83,11 @@
 
 //---------------------------------------------------------------------
 //power settings
-#define PH_CURRENT_MAX 1200
-#define BATTERYCURRENT_MAX 14000
+#define PH_CURRENT_MAX 800
+#define BATTERYCURRENT_MAX 15000
 #define REVERSE 1 //1 for normal direction, -1 for reverse
 #define PUSHASSIST_CURRENT 300
-#define VOLTAGE_MIN 1320 //33V
+#define VOLTAGE_MIN 1190 //33V
 
 //---------------------------------------------------------------------
 //torquesensor settings
@@ -97,7 +97,7 @@
 
 //---------------------------------------------------------------------
 //Display settings
-#define DISPLAY_TYPE DISPLAY_TYPE_BAFANG
+#define DISPLAY_TYPE_KUNTENG
 
 //---------------------------------------------------------------------
 //Regen settings
@@ -107,6 +107,6 @@
 //#define ADC_BRAKE
 
 //---------------------------------------------------------------------
-#define AUTODETECT 0
+#define AUTODETECT 1
 
 #endif /* CONFIG_H_ */
